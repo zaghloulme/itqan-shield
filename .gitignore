@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.npm-cache/
+.electron-cache/
+.build-home/
+shield-data/
+*.log

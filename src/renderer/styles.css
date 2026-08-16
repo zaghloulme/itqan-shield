@@ -1,0 +1,110 @@
+/* itqan Shield — renderer styles (brand: ink #0A0A0A, white canvas, plus #EAB308) */
+
+:root {
+  --bg: #ffffff;
+  --surface: #f4f4f5;
+  --border: #d4d4d4;
+  --text: #0a0a0a;
+  --muted: #71717a;
+  --meta: #a1a1aa;
+  --plus: #eab308;
+  --danger: #dc2626;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+body { padding: 20px 22px 28px; }
+
+/* ------------------------------------------------------------- header */
+
+.topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.mark { display: flex; }
+.titles h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.sub { color: var(--muted); font-size: 13px; }
+
+/* ------------------------------------------------------------- cards */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.card h2 { font-size: 15px; font-weight: 650; }
+.muted { color: var(--muted); font-size: 12.5px; margin-top: 1px; }
+.note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: var(--muted); word-break: break-all; margin-top: 8px; }
+.row { display: flex; gap: 8px; margin-top: 12px; }
+
+.tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+/* ------------------------------------------------------------- toggle switch */
+
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--border); border-radius: 999px; transition: background 120ms ease;
+}
+.slider::before {
+  content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: transform 120ms ease;
+  box-shadow: 0 1px 2px rgba(10, 10, 10, 0.25);
+}
+.switch input:checked + .slider { background: var(--text); }
+.switch input:checked + .slider::before { transform: translateX(20px); }
+.switch input:disabled + .slider { opacity: 0.5; cursor: default; }
+
+/* ------------------------------------------------------------- buttons */
+
+.btn {
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); cursor: pointer;
+  transition: background 100ms ease, border-color 100ms ease;
+}
+.btn:hover { border-color: var(--text); }
+.btn:active { transform: translateY(0.5px); }
+.btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+.btn.primary:hover { background: #1c1c1c; }
+.btn.ghost { background: transparent; }
+
+/* ------------------------------------------------------------- agents */
+
+.agent-list { list-style: none; margin-top: 10px; }
+.agent-list li {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.agent-list li:first-child { border-top: none; }
+.agent-list .tag { margin-left: 0; }
+
+/* ------------------------------------------------------------- footer */
+
+footer { margin-top: 16px; color: var(--muted); font-size: 12px; }
+footer .meta { color: var(--meta); font-size: 11px; margin-top: 2px; }

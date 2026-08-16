@@ -1,0 +1,64 @@
+{
+  "name": "itqan-shield",
+  "productName": "itqan Shield",
+  "version": "0.1.0",
+  "description": "On-device AI governance filter for itqan enforce. Local proxy + keyword filtering, in the tray. Windows & macOS, built from Linux.",
+  "main": "src/main/index.js",
+  "license": "Apache-2.0",
+  "author": "itqan",
+  "scripts": {
+    "start": "electron .",
+    "icons": "node scripts/make-icon.js",
+    "proxy": "node src/proxy/index.js",
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.itqan.shield",
+    "productName": "itqan Shield",
+    "copyright": "Copyright © itqan",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities",
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "assets/icon.png"
+    }
+  },
+  "dependencies": {
+    "node-forge": "^1.4.0"
+  }
+}
