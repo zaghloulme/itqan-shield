@@ -35,11 +35,14 @@ nothing is sent to a server for inspection.
 
 ## Install — Windows
 
-1. Download `itqan Shield Setup 0.1.0.exe` and run it.
+1. Download `itqan Shield-0.1.0-win.zip`, unzip, and run `itqan Shield.exe`.
 2. SmartScreen may warn (unsigned) → **More info** → **Run anyway**.
 3. Tray menu → **Install CA** (per-user root store, no admin needed; restart
    browsers so they pick it up).
 4. **Filter active** to route traffic through the proxy.
+
+> The NSIS installer (`.exe`) lands once Windows signing/CI is set up — this
+> release ships a portable zip built from Linux.
 
 ## Verify it works
 
