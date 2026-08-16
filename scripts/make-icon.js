@@ -126,7 +126,7 @@ const outDir = path.join(__dirname, '..', 'assets');
 fs.mkdirSync(outDir, { recursive: true });
 
 const files = {
-  'icon.png': render(256, { shield: INK, plus: true }),
+  'icon.png': render(1024, { shield: INK, plus: true }), // macOS requires >=512
   'tray.png': render(32, { shield: WHITE, plus: true }),
   'tray-dark.png': render(32, { shield: INK, plus: true }),
   'trayTemplate.png': render(32, { shield: [0, 0, 0], plus: false }),
