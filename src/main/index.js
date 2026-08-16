@@ -4,11 +4,12 @@
  * itqan Shield — Electron main process.
  *
  * Responsibilities:
- *  - Tray icon + menu (the app lives in the tray; closing the window keeps it running)
- *  - Hidden main window with the status UI
- *  - Owns the local proxy process lifecycle (starts on launch, stops on quit)
- *  - "Filter active" toggle routes the OS through the proxy (reverted on quit)
- *  - IPC surface for the renderer (status, toggle, install CA, open log…)
+ *  - Tray icon + menu (the app lives in the tray)
+ *  - Hidden main window (status, agents, keywords, log)
+ *  - Local proxy lifecycle; filter engine wired into the inspector seam
+ *  - Ask-each-time dialog (fail-closed decision provider)
+ *  - Settings + keyword store persistence; decision log
+ *  - "Filter active" routes the OS through the proxy (reverted on quit)
  */
 
 const { app, BrowserWindow, Tray, Menu, nativeTheme, ipcMain, dialog } = require('electron');
@@ -21,24 +22,35 @@ const {
   disableSystemProxy,
   getSystemProxyState,
 } = require('../proxy/system-proxy');
+const settingsStore = require('./settings');
+const keywordStore = require('../filter/keywords');
+const { createEngine } = require('../filter/engine');
+const { createAskProvider } = require('./ask-dialog');
+const logStore = require('./log');
+const { KNOWN_AGENTS, customAgentFromInput } = require('../filter/agent-registry');
 
 const DEFAULT_PORT = 8080;
 
 let mainWindow = null;
 let tray = null;
 let proxy = null;
-let filterActive = false; // OS is routed through the proxy
+let filterActive = false;
 let quitting = false;
+let settings = null;
+let kwStore = null;
+let engine = null;
+let askProvider = null;
 
-const dataDir = () => path.join(app.getPath('userData'));
 const logger = console;
+
+const dataDir = () => app.getPath('userData');
 
 // ------------------------------------------------------------- window / tray
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 520,
-    height: 640,
+    width: 560,
+    height: 720,
     show: false,
     title: 'itqan Shield',
     icon: path.join(__dirname, '..', '..', 'assets', 'icon.png'),
@@ -51,7 +63,6 @@ function createWindow() {
   });
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   mainWindow.on('close', (e) => {
-    // Tray app: hide instead of quitting.
     if (!quitting) {
       e.preventDefault();
       mainWindow.hide();
@@ -63,7 +74,6 @@ function createWindow() {
 }
 
 function trayIconPath() {
-  // macOS: template image (black + alpha). Windows/Linux: pick by theme.
   if (process.platform === 'darwin') {
     return path.join(__dirname, '..', '..', 'assets', 'trayTemplate.png');
   }
@@ -102,7 +112,6 @@ function createTray() {
     tray.on('click', showWindow);
     nativeTheme.on('updated', refreshTray);
   } catch (err) {
-    // Headless/CI environments may have no system tray — the app still works.
     logger.warn(`[shield] tray unavailable: ${err.message}`);
   }
 }
@@ -113,11 +122,37 @@ function showWindow() {
   mainWindow.focus();
 }
 
+// ------------------------------------------------------------- filter wiring
+
+function buildEngine() {
+  askProvider = createAskProvider({
+    logger,
+    onLog: (entry) => logStore.append(dataDir(), { type: 'ask', ...entry }),
+  });
+
+  engine = createEngine({
+    store: kwStore,
+    settings,
+    askForDecision: (q) => askProvider.askForDecision(q),
+    onDecision: (entry) => logStore.append(dataDir(), { type: 'decision', ...entry }),
+    askTimeoutMs: settings.askTimeoutMs || 30000,
+    logger,
+  });
+
+  // The proxy's inspector seam: engine.inspectRequest + recordDecision.
+  return {
+    failOpen: true,
+    inspectRequest: (ctx) => engine.inspectRequest(ctx),
+    recordDecision: () => {},
+  };
+}
+
 // ------------------------------------------------------------- proxy control
 
 async function ensureProxy() {
   if (proxy) return proxy;
-  proxy = await startProxy({ port: DEFAULT_PORT, dataDir: dataDir(), logger });
+  const inspector = buildEngine();
+  proxy = await startProxy({ port: DEFAULT_PORT, dataDir: dataDir(), logger, inspector });
   logger.info(`[shield] proxy running on 127.0.0.1:${proxy.port}`);
   return proxy;
 }
@@ -166,33 +201,99 @@ async function uninstallCaAction() {
   });
 }
 
-// ------------------------------------------------------------- IPC surface
+// ------------------------------------------------------------- state / IPC
 
 function notifyRenderer() {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('shield:status-changed', { filterActive, port: proxy ? proxy.port : null });
+    mainWindow.webContents.send('shield:state-changed', {
+      filterActive,
+      port: proxy ? proxy.port : null,
+    });
   }
 }
 
-async function statusPayload() {
+function persist() {
+  try {
+    settingsStore.save(dataDir(), settings);
+    keywordStore.save(dataDir(), kwStore);
+  } catch (err) {
+    logger.warn(`[shield] persist failed: ${err.message}`);
+  }
+}
+
+function getState() {
   const ca = loadOrCreateCA(dataDir());
-  const sys = await getSystemProxyState();
+  const agents = KNOWN_AGENTS.map((a) => ({
+    ...a,
+    enabled: settings.agents[a.id] === undefined ? true : settings.agents[a.id].enabled,
+  }));
   return {
-    filterActive,
-    running: !!proxy,
-    port: proxy ? proxy.port : null,
-    caPath: ca.paths.cert,
-    caExists: true,
-    platform: process.platform,
-    sysProxy: sys.ok ? { enabled: sys.enabled, detail: sys.server || sys.services || null } : { error: sys.error },
+    runtime: {
+      filterActive,
+      running: !!proxy,
+      port: proxy ? proxy.port : null,
+      caPath: ca.paths.cert,
+      platform: process.platform,
+    },
+    config: {
+      agents,
+      customAgents: settings.customAgents || [],
+      keywords: kwStore,
+      askTimeoutMs: settings.askTimeoutMs || 30000,
+    },
   };
 }
 
-ipcMain.handle('shield:status', () => statusPayload());
+ipcMain.handle('shield:get-state', () => getState());
+ipcMain.handle('shield:get-log', (_e, limit) => logStore.recent(dataDir(), limit || 100));
 ipcMain.handle('shield:toggle-filter', (_e, enabled) => toggleFilter(!!enabled));
 ipcMain.handle('shield:install-ca', () => installCaAction());
 ipcMain.handle('shield:remove-ca', () => uninstallCaAction());
 ipcMain.handle('shield:open-window', () => showWindow());
+
+ipcMain.handle('shield:set-agent-enabled', (_e, id, enabled) => {
+  settings.agents[id] = { enabled: !!enabled };
+  persist();
+  return getState();
+});
+
+ipcMain.handle('shield:add-custom-agent', (_e, name, input) => {
+  const id = `custom-${Date.now().toString(36)}`;
+  settings.customAgents = settings.customAgents || [];
+  settings.customAgents.push(customAgentFromInput(id, name, input));
+  persist();
+  return getState();
+});
+
+ipcMain.handle('shield:remove-custom-agent', (_e, id) => {
+  settings.customAgents = (settings.customAgents || []).filter((a) => a.id !== id);
+  persist();
+  return getState();
+});
+
+ipcMain.handle('shield:add-keyword', (_e, input) => {
+  const rule = keywordStore.addLocalRule(kwStore, input);
+  persist();
+  return { rule, state: getState() };
+});
+
+ipcMain.handle('shield:remove-keyword', (_e, id) => {
+  keywordStore.removeLocalRule(kwStore, id);
+  persist();
+  return getState();
+});
+
+ipcMain.handle('shield:set-keyword-enabled', (_e, id, enabled) => {
+  for (const r of [...kwStore.central, ...kwStore.local]) {
+    if (r.id === id) r.enabled = !!enabled;
+  }
+  persist();
+  return getState();
+});
+
+ipcMain.handle('shield:ask-decision', (_e, id, verdict) => {
+  return askProvider ? askProvider.resolveDecision(id, verdict) : false;
+});
 
 // ------------------------------------------------------------- lifecycle
 
@@ -203,6 +304,17 @@ if (!gotLock) {
   app.on('second-instance', showWindow);
 
   app.whenReady().then(async () => {
+    settings = settingsStore.load(dataDir());
+    kwStore = keywordStore.load(dataDir());
+
+    // Cloud sync seam: apply central keywords when a backend exists.
+    try {
+      const remote = await require('./sync').syncKeywords();
+      if (remote.central && remote.central.length) kwStore.central = remote.central;
+    } catch (err) {
+      logger.warn(`[shield] sync unavailable: ${err.message}`);
+    }
+
     createWindow();
     createTray();
     try {
@@ -212,11 +324,9 @@ if (!gotLock) {
     }
     notifyRenderer();
 
-    // Smoke test hook for CI/headless: print status JSON and exit.
     if (process.env.SHIELD_SMOKE_TEST === '1') {
       try {
-        const payload = await statusPayload();
-        console.log('SMOKE_OK ' + JSON.stringify(payload));
+        console.log('SMOKE_OK ' + JSON.stringify({ port: proxy ? proxy.port : null, agents: KNOWN_AGENTS.length }));
       } catch (err) {
         console.error('SMOKE_FAIL ' + err.message);
         process.exitCode = 1;
@@ -242,6 +352,7 @@ if (!gotLock) {
       await proxy.stop();
       proxy = null;
     }
+    persist();
     app.quit();
   });
 }

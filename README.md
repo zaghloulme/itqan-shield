@@ -4,30 +4,31 @@ On-device AI governance filter for **itqan enforce** (see `../docs/`). Runs in t
 tray on **Windows and macOS**, is built from a **Linux** machine, and filters AI
 traffic **before it leaves the device** — nothing is sent to a server for inspection.
 
-Current milestone: **M0 skeleton + M1 proxy core (verified: 50/50 tests passing)**.
+Current milestone: **M2 — keyword filter + agent selector + ask-each-time (83/83 tests passing)**.
 
 ---
 
-## What it does today (M1)
+## What it does (M2)
 
 - **Local MITM proxy** on `127.0.0.1` (default port 8080, auto-increments if busy).
-- **On-device CA**: a unique `itqan Shield Local CA` is generated on first run
-  (RSA-2048, stored under the app data dir, key at `0600`). Per-host leaf
-  certificates are minted on demand and cached.
-- **Verified** HTTP passthrough, HTTPS interception (GET + POST JSON, chunked
-  request bodies, SSE streaming, 1 MB responses), keep-alive + pipelining,
-  correct rejection of clients that don't trust the CA, and a 10-client × 3-
-  request stress test.
-- **OS system proxy** control (Windows registry / macOS `networksetup`) with
-  prior-state restore; CLI commands `--proxy-on` / `--proxy-off`.
-- **CA trust-store install/remove** (`--install-ca` / `--uninstall-ca`) for
-  Windows (per-user `certutil`) and macOS (`security`, may prompt for admin).
-- **Electron shell**: tray icon + menu, hidden status window, filter toggle,
-  CA install/remove from the UI.
+- **Keyword filter** (`src/filter/`): Aho-Corasick literal matching + regex rules,
+  word-boundary mode, Unicode-aware, span-based output (offsets + context) —
+  design borrowed from [privacy-filter.cpp](https://github.com/localai-org/privacy-filter.cpp)'s
+  scanner contract so an NER model can slot in later as a second scanner.
+- **Agent selector**: ChatGPT, Claude, Copilot, Cursor, Gemini, Perplexity,
+  OpenAI API, plus custom endpoints — per-agent on/off, matched by host.
+- **Ask-each-time**: when a keyword hits an enabled agent, a dialog shows the
+  agent, keyword, and surrounding context with Allow / Deny / Allow-session.
+  Fail-closed: timeout or dialog failure denies by default.
+- **Keyword store**: `central` (future cloud sync) + `local` lists, per-rule
+  match mode (`word` / `literal` / `regex`) and action (`ask` / `block`).
+- **Decision log**: JSONL audit trail in the data dir, shown in the window.
+- **On-device CA** (RSA-2048, per-device, key `0600`), upstream verified against
+  the public PKI, OS system-proxy control with restore, CA trust install/remove.
+- **Electron shell**: tray menu, status window (filter, agents, keywords, log).
 
-**Not yet (M2+):** keyword matching, agent selector, ask-each-time dialog, cloud sync,
-MCP sync, local log viewer. The inspection seam is in
-`src/proxy/inspect.js` — keyword filtering plugs in there.
+**Not yet (M3+):** NER/PII model scanner (privacy-filter.cpp sidecar), cloud sync
+(keyword push + decision reporting), MCP sync, signed installers.
 
 ## Layout
 

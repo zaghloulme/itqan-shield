@@ -12,21 +12,24 @@ const { makeUpstream, makeTestPki, tmpDataDir, quietLogger, MitmClient } = requi
  * Boot a proxy against a local TLS upstream signed by a throwaway CA.
  * Returns everything a test needs, including the proxy's own CA PEM.
  */
+// One PKI + one proxy CA per test FILE: node-forge RSA keygen is slow, and
+// the CA/leaf caches make the first generation serve the whole file.
+const sharedDataDir = tmpDataDir();
+const sharedPki = makeTestPki();
+
 async function setup({ inspector, upstream = {} } = {}) {
-  const dataDir = tmpDataDir();
-  const pki = makeTestPki();
-  const upstreamServer = await makeUpstream({ tls: true, pki });
+  const upstreamServer = await makeUpstream({ tls: true, pki: sharedPki });
   const proxy = await startProxy({
     port: 0,
-    dataDir,
+    dataDir: sharedDataDir,
     logger: quietLogger,
     inspector,
     // MITM the test upstream's port as well as the default 443.
     interceptPorts: [443, upstreamServer.port],
-    upstream: { ca: pki.caPem, rejectUnauthorized: true, ...upstream },
+    upstream: { ca: sharedPki.caPem, rejectUnauthorized: true, ...upstream },
   });
-  const caPem = fs.readFileSync(path.join(dataDir, 'ca.pem'), 'utf8');
-  return { dataDir, pki, upstream: upstreamServer, proxy, caPem, port: proxy.port };
+  const caPem = fs.readFileSync(path.join(sharedDataDir, 'ca.pem'), 'utf8');
+  return { dataDir: sharedDataDir, pki: sharedPki, upstream: upstreamServer, proxy, caPem, port: proxy.port };
 }
 
 function teardown(t, s) {

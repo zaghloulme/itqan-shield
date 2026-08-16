@@ -1,0 +1,74 @@
+/* itqan Shield — ask dialog (brand: ink / white / plus yellow) */
+
+:root {
+  --bg: #ffffff;
+  --surface: #f4f4f5;
+  --border: #d4d4d4;
+  --text: #0a0a0a;
+  --muted: #71717a;
+  --meta: #a1a1aa;
+  --plus: #eab308;
+  --danger: #dc2626;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  height: 100%;
+}
+
+body { display: flex; flex-direction: column; padding: 18px 20px 16px; }
+
+.ask-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.ask-head h1 { font-size: 16px; font-weight: 700; }
+.sub { color: var(--muted); font-size: 12.5px; }
+
+main { flex: 1; }
+
+.hit { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.tag {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--border);
+  border-radius: 999px; padding: 2px 9px;
+}
+.keyword {
+  font-weight: 700; font-size: 15px;
+  background: var(--plus); color: var(--text);
+  padding: 1px 10px; border-radius: 6px;
+}
+.muted { color: var(--meta); font-size: 12px; }
+
+.context {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px;
+  font-size: 13px; color: var(--text);
+  max-height: 150px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-word;
+  margin-bottom: 12px;
+}
+.context mark {
+  background: var(--plus);
+  color: var(--text);
+  font-weight: 700;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+.note { color: var(--muted); font-size: 12px; }
+
+.ask-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.btn {
+  font: inherit; font-size: 13px; font-weight: 600;
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); cursor: pointer;
+}
+.btn:hover { border-color: var(--text); }
+.btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+.btn.primary:hover { background: #1c1c1c; }
+.btn.ghost { background: transparent; color: var(--danger); border-color: var(--border); }
+.btn.ghost:hover { border-color: var(--danger); }

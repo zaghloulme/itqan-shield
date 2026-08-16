@@ -1,7 +1,7 @@
 {
   "name": "itqan-shield",
   "productName": "itqan Shield",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "On-device AI governance filter for itqan enforce. Local proxy + keyword filtering, in the tray. Windows & macOS, built from Linux.",
   "main": "src/main/index.js",
   "license": "Apache-2.0",

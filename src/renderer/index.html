@@ -39,6 +39,51 @@
     <section class="card">
       <div class="card-head">
         <div>
+          <h2>Agents</h2>
+          <p class="muted">Choose which agents the filter applies to</p>
+        </div>
+      </div>
+      <ul class="agent-list" id="agent-list"></ul>
+      <div class="row" id="custom-agent-row">
+        <input type="text" id="custom-agent-input" placeholder="https://my-agent.example.com" class="input" />
+        <button id="custom-agent-add" class="btn">Add agent</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Keywords</h2>
+          <p class="muted">Words to catch — ask each time, or block</p>
+        </div>
+      </div>
+      <div class="row">
+        <input type="text" id="keyword-input" placeholder="e.g. confidential, production database…" class="input grow" />
+        <select id="keyword-mode" class="select" title="match mode">
+          <option value="word">whole word</option>
+          <option value="literal">anywhere</option>
+          <option value="regex">regex</option>
+        </select>
+        <button id="keyword-add" class="btn primary">Add</button>
+      </div>
+      <p class="muted small">Default behavior: <b>ask each time</b> a hit appears (Allow / Deny). Central (synced) keywords will come from the enforce cloud.</p>
+      <ul class="keyword-list" id="keyword-list"></ul>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Decisions</h2>
+          <p class="muted">Recent filter activity (local audit log)</p>
+        </div>
+        <button id="log-refresh" class="btn ghost small-btn">Refresh</button>
+      </div>
+      <ul class="log-list" id="log-list"><li class="log-empty">No activity yet.</li></ul>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
           <h2>Local CA</h2>
           <p class="muted">One-time trust setup for HTTPS interception</p>
         </div>
@@ -48,33 +93,6 @@
         <button id="ca-install" class="btn primary">Install CA</button>
         <button id="ca-remove" class="btn ghost">Remove CA</button>
       </div>
-    </section>
-
-    <section class="card">
-      <div class="card-head">
-        <div>
-          <h2>Agents <span class="tag">M2</span></h2>
-          <p class="muted">Choose which agents the filter applies to</p>
-        </div>
-      </div>
-      <ul class="agent-list" id="agent-list">
-        <li><span>ChatGPT</span><span class="tag">soon</span></li>
-        <li><span>Claude</span><span class="tag">soon</span></li>
-        <li><span>Copilot</span><span class="tag">soon</span></li>
-        <li><span>Cursor</span><span class="tag">soon</span></li>
-        <li><span>Gemini</span><span class="tag">soon</span></li>
-        <li><span>Custom endpoint</span><span class="tag">soon</span></li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <div class="card-head">
-        <div>
-          <h2>Keywords <span class="tag">M2</span></h2>
-          <p class="muted">Central list (synced) + local overrides</p>
-        </div>
-      </div>
-      <p class="note">Keyword rules arrive in milestone 2. The proxy core (M1) is verified and running.</p>
     </section>
   </main>
 

@@ -166,7 +166,7 @@ function startProxy({ port, dataDir, logger, inspector, maxRetries = 20, upstrea
                   }
                 }
                 done();
-              }, 1500);
+              }, 500);
               if (timer.unref) timer.unref();
 
               for (const s of sockets) {
